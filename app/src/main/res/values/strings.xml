@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用通用 -->
+    <string name="app_name">物品追踪器</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="edit">编辑</string>
+    <string name="delete">删除</string>
+    <string name="confirm">确认</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    
+    <!-- 主页面 -->
+    <string name="asset_summary">资产摘要</string>
+    <string name="total_items">总物品数量</string>
+    <string name="active_items">活跃物品</string>
+    <string name="total_investment">总投资</string>
+    <string name="cost_per_day">每日成本</string>
+    <string name="my_items">我的物品</string>
+    <string name="no_items_yet">还没有添加任何物品，点击右下角的按钮添加新物品</string>
+    <string name="add_new_item">添加新物品</string>
+    
+    <!-- 添加/编辑物品 -->
+    <string name="add_item">添加物品</string>
+    <string name="edit_item">编辑物品</string>
+    <string name="item_name">物品名称</string>
+    <string name="item_name_hint">输入物品名称</string>
+    <string name="purchase_date">购买日期</string>
+    <string name="select_date">选择日期</string>
+    <string name="purchase_price">购买价格</string>
+    <string name="price_hint">输入价格</string>
+    <string name="category">分类</string>
+    <string name="category_hint">选择或输入分类</string>
+    <string name="expected_lifespan">预期使用寿命</string>
+    <string name="years">年</string>
+    <string name="months">月</string>
+    <string name="days">天</string>
+    <string name="notes">备注</string>
+    <string name="notes_hint">添加备注（可选）</string>
+    <string name="is_active">物品是否在使用</string>
+    <string name="add_photo">添加照片</string>
+    <string name="take_photo">拍照</string>
+    <string name="choose_from_gallery">从相册选择</string>
+    
+    <!-- 物品详情 -->
+    <string name="item_details">物品详情</string>
+    <string name="item_image">物品图片</string>
+    <string name="purchased_on">购买于</string>
+    <string name="price">价格</string>
+    <string name="lifespan">预期寿命</string>
+    <string name="daily_cost">每日成本</string>
+    <string name="status">状态</string>
+    <string name="active">使用中</string>
+    <string name="inactive">未使用</string>
+    <string name="time_owned">已拥有时间</string>
+    <string name="remaining_lifespan">剩余寿命</string>
+    <string name="delete_confirmation">确认删除</string>
+    <string name="delete_item_message">确定要删除该物品吗？此操作无法撤销。</string>
+    
+    <!-- 错误消息 -->
+    <string name="error_empty_name">物品名称不能为空</string>
+    <string name="error_zero_price">价格必须大于0</string>
+    <string name="error_empty_category">请选择或输入一个分类</string>
+    <string name="error_zero_lifespan">使用寿命必须大于0</string>
+    <string name="error_image_load">无法加载图片</string>
+    <string name="error_save_item">保存物品时出错</string>
+    <string name="error_delete_item">删除物品时出错</string>
+    <string name="camera_permission_denied">无法访问相机，请在设置中允许相机权限</string>
+    <string name="storage_permission_denied">无法访问存储，请在设置中允许存储权限</string>
+</resources>
