@@ -30,6 +30,14 @@
         <activity
             android:name=".activities.EditItemActivity"
             android:exported="false" />
+        <activity
+            android:name=".activities.SettingsActivity"
+            android:label="设置"
+            android:parentActivityName=".activities.MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activities.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

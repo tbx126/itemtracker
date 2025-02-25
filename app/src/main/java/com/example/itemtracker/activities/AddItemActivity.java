@@ -4,17 +4,19 @@ import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.example.itemtracker.R;
-import com.example.itemtracker.db.DatabaseHelper;
+import com.example.itemtracker.database.AppDatabase;
 import com.example.itemtracker.models.Item;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -27,16 +29,23 @@ public class AddItemActivity extends AppCompatActivity {
     private ImageView ivItemImage;
     private Uri selectedImageUri;
     private Calendar calendar;
-    private DatabaseHelper dbHelper;
+    private AppDatabase db;
     private static final int PICK_IMAGE_REQUEST = 1;
+    private static final String DATE_FORMAT = "yyyy-MM-dd"; // 统一的日期格式
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_item);
 
-        // 初始化数据库助手
-        dbHelper = DatabaseHelper.getInstance(this);
+        // 启用返回按钮
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("添加物品");
+        }
+
+        // 初始化数据库
+        db = AppDatabase.getInstance(this);
 
         // 初始化视图
         etName = findViewById(R.id.et_name);
@@ -45,50 +54,36 @@ public class AddItemActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btn_save);
         ivItemImage = findViewById(R.id.iv_item_image);
 
-        // 初始化日历
+        // 初始化日历并设置为当前日期
         calendar = Calendar.getInstance();
 
+        // 默认显示当前日期
+        updateDateLabel();
+
         // 设置购买日期选择器
-        etPurchaseDate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new DatePickerDialog(AddItemActivity.this, dateSetListener,
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH),
-                        calendar.get(Calendar.DAY_OF_MONTH)).show();
-            }
+        etPurchaseDate.setOnClickListener(v -> {
+            new DatePickerDialog(AddItemActivity.this, dateSetListener,
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)).show();
         });
 
         // 设置图片选择
-        ivItemImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openImagePicker();
-            }
-        });
+        ivItemImage.setOnClickListener(v -> openImagePicker());
 
         // 设置保存按钮
-        btnSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveItem();
-            }
-        });
+        btnSave.setOnClickListener(v -> saveItem());
     }
 
-    private DatePickerDialog.OnDateSetListener dateSetListener = new DatePickerDialog.OnDateSetListener() {
-        @Override
-        public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-            calendar.set(Calendar.YEAR, year);
-            calendar.set(Calendar.MONTH, month);
-            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            updateDateLabel();
-        }
+    private DatePickerDialog.OnDateSetListener dateSetListener = (view, year, month, dayOfMonth) -> {
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month);
+        calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        updateDateLabel();
     };
 
     private void updateDateLabel() {
-        String dateFormat = "yyyy-MM-dd";
-        SimpleDateFormat sdf = new SimpleDateFormat(dateFormat, Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
         etPurchaseDate.setText(sdf.format(calendar.getTime()));
     }
 
@@ -107,52 +102,107 @@ public class AddItemActivity extends AppCompatActivity {
 
             // 获取永久读取权限
             try {
-                getContentResolver().takePersistableUriPermission(selectedImageUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                int flags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                getContentResolver().takePersistableUriPermission(selectedImageUri, flags);
             } catch (Exception e) {
                 // 有些URI可能不支持持久权限
+                e.printStackTrace();
             }
 
             // 使用Glide加载图片
             Glide.with(this)
                     .load(selectedImageUri)
+                    .centerCrop()
                     .error(R.drawable.ic_default_item)
                     .into(ivItemImage);
         }
     }
 
     private void saveItem() {
-        String name = etName.getText().toString();
-        String priceStr = etPrice.getText().toString();
-        String date = etPurchaseDate.getText().toString();
+        String name = etName.getText().toString().trim();
+        String priceStr = etPrice.getText().toString().trim();
+        String date = etPurchaseDate.getText().toString().trim();
 
-        if (name.isEmpty() || priceStr.isEmpty() || date.isEmpty()) {
-            Toast.makeText(this, "请填写所有字段", Toast.LENGTH_SHORT).show();
+        // 验证输入
+        if (name.isEmpty()) {
+            etName.setError("请输入物品名称");
+            etName.requestFocus();
+            return;
+        }
+
+        if (priceStr.isEmpty()) {
+            etPrice.setError("请输入价格");
+            etPrice.requestFocus();
+            return;
+        }
+
+        if (date.isEmpty()) {
+            etPurchaseDate.setError("请选择日期");
+            etPurchaseDate.requestFocus();
             return;
         }
 
         try {
             double price = Double.parseDouble(priceStr);
+            if (price <= 0) {
+                etPrice.setError("价格必须大于0");
+                etPrice.requestFocus();
+                return;
+            }
+
+            // 验证日期格式
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
+                sdf.setLenient(false); // 严格验证日期格式
+                sdf.parse(date);
+            } catch (Exception e) {
+                etPurchaseDate.setError("日期格式无效");
+                etPurchaseDate.requestFocus();
+                return;
+            }
 
             // 创建新物品对象
-            Item item = new Item(name, price, date);
+            final Item item = new Item();
+            item.setName(name);
+            item.setPrice(price);
+            item.setPurchaseDate(date);
 
             // 设置图片URI
             if (selectedImageUri != null) {
-                item.setImageUri(selectedImageUri.toString());
+                item.setImageUriString(selectedImageUri.toString());
             }
 
-            // 保存到数据库
-            long id = dbHelper.addItem(item);
+            // 在后台线程中保存到数据库
+            AppDatabase.databaseWriteExecutor.execute(() -> {
+                // 保存到数据库 - 修改这里
+                try {
+                    db.itemDao().insert(item);
 
-            if (id > 0) {
-                Toast.makeText(this, "物品已成功添加", Toast.LENGTH_SHORT).show();
-                finish(); // 返回主界面
-            } else {
-                Toast.makeText(this, "添加物品失败", Toast.LENGTH_SHORT).show();
-            }
+                    // 在UI线程中显示成功结果
+                    runOnUiThread(() -> {
+                        Toast.makeText(AddItemActivity.this, "物品已成功添加", Toast.LENGTH_SHORT).show();
+                        finish(); // 返回主界面
+                    });
+                } catch (Exception e) {
+                    // 在UI线程中显示失败结果
+                    runOnUiThread(() -> {
+                        Toast.makeText(AddItemActivity.this, "添加物品失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+                    e.printStackTrace();
+                }
+            });
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "请输入有效的价格", Toast.LENGTH_SHORT).show();
+            etPrice.setError("请输入有效的价格");
+            etPrice.requestFocus();
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
